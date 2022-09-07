@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:location/location.dart';
 import 'package:openlayers/openlayers.dart';
 
 void main() {
@@ -28,11 +29,12 @@ class _HomeState extends State<Home> {
               _webViewController = controller;
             }),
         TextButton(
-            onPressed: () {
-              double lon = 29.12349029753785;
-              double lat = 40.95089078729886;
+            onPressed: () async {
+              LocationData? loc = await getLocation();
+              double? lon = loc?.longitude;
+              double? lat = loc?.latitude;
               List<double> convertedCoordinate =
-                  OpenLayers.helper.convertCoordinate(lon, lat);
+                  OpenLayers.helper.convertCoordinate(lon!, lat!);
               int zoom = 15;
               double duration = 2000;
               OpenLayers.helper.runJs(_webViewController, [
@@ -47,9 +49,37 @@ class _HomeState extends State<Home> {
                 }
               ]);
             },
-            child: const Text("test"))
+            child: const Text("Find Me"))
       ],
     );
+  }
+
+  Future<LocationData?> getLocation() async {
+    Location location = Location();
+
+    bool serviceEnabled;
+    PermissionStatus permissionGranted;
+    LocationData? locationData;
+
+    serviceEnabled = await location.serviceEnabled();
+    if (!serviceEnabled) {
+      serviceEnabled = await location.requestService();
+      if (!serviceEnabled) {
+        return locationData;
+      }
+    }
+
+    permissionGranted = await location.hasPermission();
+    if (permissionGranted == PermissionStatus.denied) {
+      permissionGranted = await location.requestPermission();
+      if (permissionGranted != PermissionStatus.granted) {
+        return locationData;
+      }
+    }
+
+    locationData = await location.getLocation();
+
+    return locationData;
   }
 }
 
