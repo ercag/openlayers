@@ -1,20 +1,24 @@
-// ignore_for_file: avoid_web_libraries_in_flutter
-
+// ignore_for_file: avoid_web_libraries_in_flutter, import_of_legacy_library_into_null_safe
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'dart:ui' as ui;
-import 'dart:html' as html;
+import 'package:universal_ui/universal_ui.dart';
+import 'package:universal_html/html.dart' as html;
 
 import 'package:openlayers/helpers/openlayers_helper.dart';
-import 'package:webview_flutter_plus/webview_flutter_plus.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class OpenLayers extends StatefulWidget {
-  const OpenLayers({Key? key, required this.width, required this.height})
+  const OpenLayers(
+      {Key? key,
+      required this.width,
+      required this.height,
+      this.onWebViewCreated})
       : super(key: key);
   final String width;
   final String height;
+  final WebViewCreatedCallback? onWebViewCreated;
   static OpenLayersHelper helper = OpenLayersHelper();
 
   @override
@@ -22,6 +26,13 @@ class OpenLayers extends StatefulWidget {
 }
 
 class _OpenLayersState extends State<OpenLayers> {
+  @override
+  void initState() {
+    super.initState();
+
+    if (Platform.isAndroid) WebView.platform = AndroidWebView();
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget map = Container();
@@ -33,17 +44,26 @@ class _OpenLayersState extends State<OpenLayers> {
       map = mobileMap();
     }
 
-    return SizedBox(
-        width: double.parse(widget.width.isEmpty ? "100" : widget.width),
-        height: double.parse(widget.height.isEmpty ? "100" : widget.height),
+    return ConstrainedBox(
+        constraints: BoxConstraints(
+            maxHeight:
+                double.parse(widget.height.isEmpty ? "100" : widget.height),
+            maxWidth:
+                double.parse(widget.width.isEmpty ? "100" : widget.width)),
         child: map);
   }
 
-  Widget mobileMap() {
-    return WebViewPlus(
+  WebView mobileMap() {
+    return WebView(
       javascriptMode: JavascriptMode.unrestricted,
+      backgroundColor: Colors.transparent,
+      userAgent:
+          "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:47.0) Gecko/20100101 Firefox/47.0",
+      zoomEnabled: true,
       onWebViewCreated: (controller) {
-        controller.loadUrl('./assets/packages/openlayers/assets/index.html');
+        widget.onWebViewCreated!(controller);
+        controller.loadUrl(
+            "file:///android_asset/flutter_assets/packages/openlayers/assets/index.html");
       },
     );
   }
@@ -63,7 +83,6 @@ class _OpenLayersState extends State<OpenLayers> {
     wrapper.append(iframeElement);
 
     String viewID = "map-id";
-    // ignore: undefined_prefixed_name
     ui.platformViewRegistry.registerViewFactory(
       viewID,
       (int viewId) => wrapper,

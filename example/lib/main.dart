@@ -13,15 +13,20 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  // ignore: prefer_typing_uninitialized_variables
+  var _webViewController;
   @override
   Widget build(BuildContext context) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Text(MediaQuery.of(context).size.width.toString()),
         OpenLayers(
-            width: (MediaQuery.of(context).size.width / 2).toString(),
-            height: "300"),
+            width: (MediaQuery.of(context).size.width).toString(),
+            height: (MediaQuery.of(context).size.height / 2).toString(),
+            onWebViewCreated: (controller) {
+              _webViewController = controller;
+            }),
         TextButton(
             onPressed: () {
               double lon = 29.12349029753785;
@@ -30,7 +35,7 @@ class _HomeState extends State<Home> {
                   OpenLayers.helper.convertCoordinate(lon, lat);
               int zoom = 15;
               double duration = 2000;
-              OpenLayers.helper.runJs([
+              OpenLayers.helper.runJs(_webViewController, [
                 "view.animate",
                 {
                   "center": [
